@@ -2,7 +2,7 @@
  * @name EditUsers
  * @author DevilBro
  * @authorId 278543574059057154
- * @version 4.8.9
+ * @version 4.9.3
  * @description Allows you to locally edit Users
  * @invite Jx3TjNS
  * @donate https://www.paypal.me/MircoWittrien
@@ -113,7 +113,6 @@ module.exports = (_ => {
 						"GuildEmojis",
 						"GuildInvitationRow",
 						"GuildInvites",
-						"GuildMemberEntry",
 						"MemberListItem",
 						"Message",
 						"MessageContent",
@@ -129,13 +128,11 @@ module.exports = (_ => {
 						"SearchPopoutOption",
 						"ThreadMessageAccessoryMessage",
 						"UserBanner",
-						"UserBannerMask",
+						"UserHeaderAvatar",
+						"UserHeaderUsername",
 						"UserInfo",
-						"UsernameSection",
-						"UserPopoutAvatar",
-						"UserProfile",
+						"UserPanelHeader",
 						"UserProfileHeader",
-						"UserProfileUsername",
 						"UserSummaryItem",
 						"VoiceUser"
 					],
@@ -167,9 +164,8 @@ module.exports = (_ => {
 						"ThreadEmptyMessageAuthor",
 						"TypingUsers",
 						"UserMention",
-						"UsernameSection",
-						"UserProfileMutualFriends",
-						"UserProfileUsername",
+						"UserBanner",
+						"UserHeaderUsername",
 						"VoiceUser"
 					]
 				};
@@ -180,10 +176,6 @@ module.exports = (_ => {
 					${BDFDB.dotCN.messageavatar} {
 						background-size: cover;
 						object-fit: cover;
-					}
-					${BDFDB.dotCNS.userprofilemodal + BDFDB.dotCNS.linedefaultcolor + BDFDB.dotCN.bottag} {
-						display: inline-flex;
-						margin-top: 4px;
 					}
 					${BDFDB.dotCNS.dmchannel + BDFDB.dotCN.bottag} {
 						margin-left: 4px;
@@ -196,6 +188,12 @@ module.exports = (_ => {
 					}
 					${BDFDB.dotCNS.peoplesuserhovered + BDFDB.dotCN.peoplesdiscriminator} {
 						display: block;
+					}
+					${BDFDB.dotCNS.userheaderclickableusername + BDFDB.dotCN.userheadernickname}:has(span) {
+						text-decoration: unset !important;
+					}
+					${BDFDB.dotCNS.userheaderclickableusername + BDFDB.dotCN.userheadernickname} > span:first-child:hover {
+						text-decoration: underline !important;
 					}
 					${BDFDB.dotCN.message} span[style*="--edited-user-color-gradient"] ${BDFDB.dotCN.messageusername} {
 						background-image: var(--edited-user-color-gradient) !important;
@@ -294,6 +292,14 @@ module.exports = (_ => {
 						else if (data.banner) return data.banner;
 					}
 					return e.callOriginalMethod();
+				}});
+				
+				BDFDB.PatchUtils.patch(this, BDFDB.LibraryModules.UserBannerUtils, "getBanner", {after: e => {
+					let data = e.returnValue && e.methodArguments[0].displayProfile && changedUsers[e.methodArguments[0].displayProfile.userId];
+					if (data) {
+						if (data.removeBanner) e.returnValue.bannerSrc = null;
+						else if (data.banner) e.returnValue.bannerSrc = data.banner;
+					}
 				}});
 				
 				BDFDB.PatchUtils.patch(this, BDFDB.LibraryModules.MemberDisplayUtils, "getUserProfile", {after: e => {
@@ -465,7 +471,7 @@ module.exports = (_ => {
 			}
 			
 			processChannelTextAreaEditor (e) {
-				if (!e.instance.props.disabled && e.instance.props.channel && e.instance.props.channel.isDM() && (e.instance.props.type == BDFDB.DiscordConstants.ChannelTextAreaTypes.NORMAL || e.instance.props.type == BDFDB.DiscordConstants.ChannelTextAreaTypes.NORMAL_WITH_ACTIVITY) && this.settings.places.chatTextarea) {
+				if (!e.instance.props.disabled && e.instance.props.channel && e.instance.props.channel.isDM() && (e.instance.props.type == BDFDB.DiscordConstants.ChannelTextAreaTypes.NORMAL) && this.settings.places.chatTextarea) {
 					let user = BDFDB.LibraryStores.UserStore.getUser(e.instance.props.channel.recipients[0]);
 					if (user) e.instance.props.placeholder = BDFDB.LanguageUtils.LanguageStringsFormat("TEXTAREA_PLACEHOLDER", `@${changedUsers[user.id] && changedUsers[user.id].name || user.globalName || user.username}`);
 				}
@@ -524,12 +530,7 @@ module.exports = (_ => {
 				let change = false, guildId = null;
 				let tagClass = "";
 				if (e.instance.props.className) {
-					if (e.instance.props.className.indexOf(BDFDB.disCN.userpopoutheadertagwithnickname) > -1) {
-						change = this.settings.places.userPopout;
-						guildId = BDFDB.LibraryStores.SelectedGuildStore.getGuildId();
-						tagClass = BDFDB.disCNS.userpopoutheaderbottag + BDFDB.disCN.bottagnametag;
-					}
-					else if (e.instance.props.className.indexOf(BDFDB.disCN.guildsettingsinviteusername) > -1) {
+					if (e.instance.props.className.indexOf(BDFDB.disCN.guildsettingsinviteusername) > -1) {
 						change = this.settings.places.guildSettings;
 					}
 					else if (e.instance.props.className.indexOf(BDFDB.disCN.peoplesdiscordtag) > -1) {
@@ -549,36 +550,30 @@ module.exports = (_ => {
 
 			processUserBanner (e) {
 				if (!e.instance.props.user || !changedUsers[e.instance.props.user.id]) return;
-				if (changedUsers[e.instance.props.user.id].removeBanner) {
-					e.instance.props.bannerSrc = null;
-					if (e.instance.props.displayProfile) e.instance.props.displayProfile.banner = null;
-				}
-				else if (changedUsers[e.instance.props.user.id].banner) {
-					e.instance.props.bannerSrc = changedUsers[e.instance.props.user.id].banner;
-					if (e.instance.props.displayProfile) {
-						e.instance.props.displayProfile = BDFDB.ObjectUtils.copy(e.instance.props.displayProfile);
-						e.instance.props.displayProfile.banner = changedUsers[e.instance.props.user.id].banner;
-						e.instance.props.displayProfile.premiumType = 2;
-					}
-				}
-			}
-
-			processUserBannerMask (e) {
-				if (!e.instance.props.user || !changedUsers[e.instance.props.user.id]) return;
-				if (changedUsers[e.instance.props.user.id].removeBanner) e.instance.props.isPremium = false;
-				else if (changedUsers[e.instance.props.user.id].banner) e.instance.props.isPremium = true;
-			}
-			
-			processUserPopoutAvatar (e) {
-				if (!e.instance.props.user || !changedUsers[e.instance.props.user.id]) return;
-				if (this.settings.places.userPopout) e.instance.props.user = this.getUserData(e.instance.props.user.id, true, true);
-				if (e.instance.props.displayProfile) {
+				if (!e.returnvalue) {
 					if (changedUsers[e.instance.props.user.id].removeBanner) {
-						e.instance.props.hasBanner = false;
 						e.instance.props.displayProfile.banner = null;
 					}
 					else if (changedUsers[e.instance.props.user.id].banner) {
-						e.instance.props.hasBanner = true;
+						e.instance.props.displayProfile = BDFDB.ObjectUtils.copy(e.instance.props.displayProfile);
+						e.instance.props.displayProfile.banner = changedUsers[e.instance.props.user.id].banner;
+						e.instance.props.displayProfile.premiumType = 2;
+					}
+				}
+				else {
+					if (changedUsers[e.instance.props.user.id].removeBanner) e.returnvalue.props.isPremium = false;
+					else if (changedUsers[e.instance.props.user.id].banner) e.returnvalue.props.isPremium = true;
+					if (e.instance.props.displayProfile.themeColors) e.returnvalue.props.hasThemeColors = true;
+					else e.returnvalue.props.hasThemeColors = false;
+				}
+			}
+			
+			processUserHeaderAvatar (e) {
+				if (!e.instance.props.user || !changedUsers[e.instance.props.user.id]) return;
+				if (this.settings.places.userPopout) e.instance.props.user = this.getUserData(e.instance.props.user.id, true, true);
+				if (e.instance.props.displayProfile) {
+					if (changedUsers[e.instance.props.user.id].removeBanner) e.instance.props.displayProfile.banner = null;
+					else if (changedUsers[e.instance.props.user.id].banner) {
 						e.instance.props.displayProfile = BDFDB.ObjectUtils.copy(e.instance.props.displayProfile);
 						e.instance.props.displayProfile.banner = changedUsers[e.instance.props.user.id].banner;
 						e.instance.props.displayProfile.premiumType = 2;
@@ -586,8 +581,18 @@ module.exports = (_ => {
 				}
 			}
 			
-			processUsernameSection (e) {
-				if (!this.settings.places.userPopout || !e.instance.props.user) return;
+			processUserPanelHeader (e) {
+				if (!e.instance.props.user || !changedUsers[e.instance.props.user.id] || !this.settings.places.userProfile) return;
+				e.instance.props.user = this.getUserData(e.instance.props.user.id, true, true);
+			}
+			
+			processUserProfileHeader (e) {
+				if (!e.instance.props.user || !changedUsers[e.instance.props.user.id] || !this.settings.places.userProfile) return;
+				e.instance.props.user = this.getUserData(e.instance.props.user.id, true, true);
+			}
+			
+			processUserHeaderUsername (e) {
+				if (!e.instance.props.user || e.instance.props.profileType == BDFDB.DiscordConstants.ProfileTypes.BITE_SIZE && !this.settings.places.userPopout || e.instance.props.profileType == BDFDB.DiscordConstants.ProfileTypes.FULL_SIZE && !this.settings.places.userProfile) return;
 				let data = changedUsers[e.instance.props.user.id];
 				if (!data) return;
 				if (!e.returnvalue) {
@@ -596,45 +601,17 @@ module.exports = (_ => {
 				}
 				else {
 					if (data.color1 || data.tag) {
-						let [children, index] = BDFDB.ReactUtils.findParent(e.returnvalue, {props: [["className", BDFDB.disCN.userpopoutheadernickname]]});
+						let [children, index] = BDFDB.ReactUtils.findParent(e.returnvalue, {props: [["className", BDFDB.disCN.userheadernickname]]});
 						if (index > -1) {
 							this.changeUserColor(children[index], e.instance.props.user.id);
 							if (!BDFDB.ArrayUtils.is(children[index].props.children)) children[index].props.children = [children[index].props.children].flat(10);
 							this.injectBadge(children[index].props.children, e.instance.props.user.id, BDFDB.LibraryStores.SelectedGuildStore.getGuildId(), 2, {
-								tagClass: BDFDB.disCNS.userpopoutheaderbottag + BDFDB.disCN.bottagnametag,
+								tagClass: BDFDB.disCNS.userheaderbottag + BDFDB.disCN.bottagnametag,
 								inverted: typeof e.instance.getMode == "function" && e.instance.getMode() !== "Normal"
 							});
 						}
 					}
 				}
-			}
-
-			processUserProfile (e) {
-				if (e.instance.props.user && this.settings.places.userProfile) e.instance.props.user = this.getUserData(e.instance.props.user.id);
-			}
-
-			processUserProfileHeader (e) {
-				if (e.instance.props.user && this.settings.places.userProfile) e.instance.props.user = this.getUserData(e.instance.props.user.id);
-			}
-
-			processUserProfileUsername (e) {
-				if (!e.instance.props.user || !this.settings.places.userProfile) return;
-				if (!e.returnvalue) e.instance.props.user = this.getUserData(e.instance.props.user.id);
-				else {
-					let username = BDFDB.ReactUtils.findChild(e.returnvalue, {props: ["children", "style", "variant"]});
-					if (!username) return;
-					username.props.children = BDFDB.ReactUtils.createElement(BDFDB.ReactUtils.Fragment, {children: username.props.children});
-					this.changeUserColor(username.props.children, e.instance.props.user.id);
-					username.props.children = [username.props.children];
-					this.injectBadge(username.props.children, e.instance.props.user.id, BDFDB.LibraryStores.SelectedGuildStore.getGuildId(), 2, {
-						tagClass: BDFDB.disCN.bottagnametag
-					});
-				}
-			}
-
-			processUserProfileMutualFriends (e) {
-				if (!this.settings.places.userProfile || !e.returnvalue.props.children || !e.returnvalue.props.children.length) return;
-				for (let row of e.returnvalue.props.children) if (row && row.props && row.props.user) row.props.user = this.getUserData(row.props.user.id);
 			}
 
 			processUserInfo (e) {
@@ -735,13 +712,13 @@ module.exports = (_ => {
 						const renderChildren = accountButton.props.children;
 						accountButton.props.children = BDFDB.TimeUtils.suppress((...args) => {
 							const returnValue = renderChildren(...args);
-							const renderChildren2 = returnValue.props.children.props.children;
-							returnValue.props.children.props.children = BDFDB.TimeUtils.suppress((...args2) => {
-								const returnValue2 = renderChildren2(...args2);
-								let username = BDFDB.ReactUtils.findChild(returnValue2, {props: [["className", BDFDB.disCN.accountinfodetails]]});
+							const renderNameTag = returnValue.props.renderNameTag;
+							returnValue.props.renderNameTag = BDFDB.TimeUtils.suppress((...args2) => {
+								const nameTag = renderNameTag(...args2);
+								let username = BDFDB.ReactUtils.findChild(nameTag, {props: [["className", BDFDB.disCN.accountinfodetails]]});
 								if (username) this.changeUserColor(username.props.children, e.instance.props.currentUser.id);
-								return returnValue2;
-							}, "Error in Children Render of Account Button Children!", this);
+								return nameTag;
+							}, "Error in Render NameTag in Account Button!", this);
 							return returnValue;
 						}, "Error in Children Render of Account Button!", this);
 					}
@@ -1086,10 +1063,6 @@ module.exports = (_ => {
 				}
 			}
 
-			processGuildMemberEntry (e) {
-				if (this.settings.places.guildSettings && e.instance.props.user) e.instance.props.user = this.getUserData(e.instance.props.user.id);
-			}
-
 			processGuildInvites (e) {
 				if (!this.settings.places.guildSettings || !e.instance.props.invites) return;
 				e.instance.props.invites = Object.assign({}, e.instance.props.invites);
@@ -1365,18 +1338,12 @@ module.exports = (_ => {
 						newUserObject.username = !keepName && data.name || nativeObject.username;
 						newUserObject.usernameNormalized = !keepName && data.name && data.name.toLowerCase() || nativeObject.usernameNormalized;
 					}
-					if (data.removeIcon) {
-						newUserObject.avatar = null;
-						newUserObject.avatarURL = null;
-						newUserObject.getAvatarSource = _ => null;
-						newUserObject.getAvatarURL = _ => null;
-						newUserObject.guildMemberAvatars = {};
-					}
-					else if (data.url) {
-						newUserObject.avatar = data.url;
-						newUserObject.avatarURL = data.url;
-						newUserObject.getAvatarSource = _ => data.url;
-						newUserObject.getAvatarURL = _ => data.url;
+					let url = data.removeIcon ? "https://mwittrien.github.io/BetterDiscordAddons/Themes/_res/svgs/empty.png?src=.com/avatars/" + user.id + "/" + user.avatar : data.url;
+					if (url) {
+						newUserObject.avatar = url;
+						newUserObject.avatarURL = url;
+						newUserObject.getAvatarSource = _ => url;
+						newUserObject.getAvatarURL = _ => url;
 						newUserObject.guildMemberAvatars = {};
 					}
 					return newUserObject;

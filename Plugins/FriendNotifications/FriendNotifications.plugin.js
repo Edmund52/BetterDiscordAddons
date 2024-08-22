@@ -208,11 +208,14 @@ module.exports = (_ => {
 
 				this.defaults = {
 					general: {
-						addOnlineCount:			{value: true, 	description: "Adds an Online Friend Counter to the Server List (Click to open Time Log)"},
-						showDiscriminator:		{value: false, 	description: "Adds the User Discriminator"},
-						showTimestamp:			{value: false, 	description: "Adds the Timestamp"},
-						muteOnDND:			{value: false, 	description: "Does not notify you when you are in DnD Status"},
-						openOnClick:			{value: false, 	description: "Opens the DM when you click a Notification"}
+						addOnlineCount:			{value: true, 			description: "Adds an Online Friend Counter to the Server List (Click to open Time Log)"},
+						showDiscriminator:		{value: false, 			description: "Adds the User Discriminator"},
+						showTimestamp:			{value: false, 			description: "Adds the Timestamp"},
+						muteOnDND:			{value: false, 			description: "Does not notify you when you are in DnD Status"},
+						openOnClick:			{value: false, 			description: "Opens the DM when you click a Notification"}
+					},
+					choices: {
+						toastPosition:			{value: "right",		description: "Position of Toast Notifications",		items: "ToastPositions"}
 					},
 					notificationStrings: {
 						online: 			{value: "$user changed status to '$status'"},
@@ -325,7 +328,7 @@ module.exports = (_ => {
 				let createUserList = (users, type, title) => {
 					let items = [];
 					items.push(BDFDB.ReactUtils.createElement(BDFDB.LibraryComponents.Flex, {
-						className: BDFDB.disCNS.settingsrowtitle + BDFDB.disCNS.settingsrowtitledefault + BDFDB.disCN.cursordefault,
+						className: BDFDB.disCNS.settingsrowtitle + BDFDB.disCN.cursordefault,
 						children: [
 							"Click on an Option to toggle",
 							BDFDB.ReactUtils.createElement("span", {
@@ -337,7 +340,7 @@ module.exports = (_ => {
 						]
 					}));
 					if ("Notification" in window) items.push(BDFDB.ReactUtils.createElement(BDFDB.LibraryComponents.Flex, {
-						className: BDFDB.disCNS.settingsrowtitle + BDFDB.disCNS.settingsrowtitledefault + BDFDB.disCN.cursordefault,
+						className: BDFDB.disCNS.settingsrowtitle + BDFDB.disCN.cursordefault,
 						children: [
 							"Right-Click on an Option to toggle",
 							BDFDB.ReactUtils.createElement("span", {
@@ -349,7 +352,7 @@ module.exports = (_ => {
 						]
 					}));
 					items.push(BDFDB.ReactUtils.createElement(BDFDB.LibraryComponents.Flex, {
-						className: BDFDB.disCNS.settingsrowtitle + BDFDB.disCNS.settingsrowtitledefault + BDFDB.disCN.cursordefault,
+						className: BDFDB.disCNS.settingsrowtitle + BDFDB.disCN.cursordefault,
 						style: {marginTop: 6},
 						children: [
 							"Click on an Option Header to toggle",
@@ -362,7 +365,7 @@ module.exports = (_ => {
 						]
 					}));
 					if ("Notification" in window) items.push(BDFDB.ReactUtils.createElement(BDFDB.LibraryComponents.Flex, {
-						className: BDFDB.disCNS.settingsrowtitle + BDFDB.disCNS.settingsrowtitledefault + BDFDB.disCN.cursordefault,
+						className: BDFDB.disCNS.settingsrowtitle + BDFDB.disCN.cursordefault,
 						children: [
 							"Right-Click on an Option Header to toggle",
 							BDFDB.ReactUtils.createElement("span", {
@@ -374,12 +377,12 @@ module.exports = (_ => {
 						]
 					}));
 					items.push(BDFDB.ReactUtils.createElement(BDFDB.LibraryComponents.Flex, {
-						className: BDFDB.disCNS.settingsrowtitle + BDFDB.disCNS.settingsrowtitledefault + BDFDB.disCN.cursordefault,
+						className: BDFDB.disCNS.settingsrowtitle + BDFDB.disCN.cursordefault,
 						style: {marginTop: 6},
 						children: "Click on an Avatar to toggle between enabled/disabled"
 					}));
 					if ("Notification" in window) items.push(BDFDB.ReactUtils.createElement(BDFDB.LibraryComponents.Flex, {
-						className: BDFDB.disCNS.settingsrowtitle + BDFDB.disCNS.settingsrowtitledefault + BDFDB.disCN.cursordefault,
+						className: BDFDB.disCNS.settingsrowtitle + BDFDB.disCN.cursordefault,
 						children: [
 							"Right-Click on an Avatar to toggle all Options between",
 							BDFDB.ReactUtils.createElement("span", {
@@ -505,6 +508,19 @@ module.exports = (_ => {
 									label: this.defaults.general[key].description,
 									value: this.settings.general[key]
 								})),
+								Object.keys(this.defaults.choices).map(key => BDFDB.ReactUtils.createElement(BDFDB.LibraryComponents.SettingsSaveItem, {
+									type: "Select",
+									plugin: this,
+									keys: ["choices", key],
+									label: this.defaults.choices[key].description,
+									basis: "50%",
+									value: this.settings.choices[key],
+									options: Object.keys(BDFDB.DiscordConstants[this.defaults.choices[key].items] || {}).map(p => ({
+										value: p,
+										label: BDFDB.LanguageUtils.LibraryStrings[p] || p
+									})),
+									searchable: true
+								})),
 								Object.keys(this.defaults.dates).map(key => BDFDB.ReactUtils.createElement(BDFDB.LibraryComponents.DateInput, {
 									...(this.settings.dates[key] || {}),
 									label: this.defaults.dates[key].description,
@@ -604,7 +620,7 @@ module.exports = (_ => {
 							children: [BDFDB.ReactUtils.createElement(BDFDB.LibraryComponents.Flex, {
 								className: BDFDB.disCN.marginbottom8,
 								children: BDFDB.ReactUtils.createElement("div", {
-									className: BDFDB.disCNS.settingsrowtitle + BDFDB.disCNS.settingsrowtitledefault + BDFDB.disCN.cursordefault,
+									className: BDFDB.disCNS.settingsrowtitle + BDFDB.disCN.cursordefault,
 									children: [
 										"Allows you to configure your own Message Strings for the different Statuses.",
 										[
@@ -913,6 +929,7 @@ module.exports = (_ => {
 									timeout: this.settings.amounts.toastTime * 1000,
 									avatar: avatar,
 									barColor: BDFDB.UserUtils.getStatusColor(status.name, true),
+									position: this.settings.choices.toastPosition,
 									onClick: openChannel,
 									onShow: _ => {
 										let notificationSound = this.settings.notificationSounds["toast" + status.name] || {};
