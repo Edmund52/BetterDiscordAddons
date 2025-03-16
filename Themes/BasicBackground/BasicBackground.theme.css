@@ -58,7 +58,7 @@
 	--font:				"gg sans", "Noto Sans";		/* font used in most places														*/
 	--textshadow:			transparent;			/* default: transparent				(textshadow for text ontop of accentcolor nodes, ONLY accepts a color, no px)		*/
 	
-	--background:			url(https://files.horizon.pics/b161b7ae-75bc-46b7-be9c-d57ecb1715de?a=550&mime1=video&mime2=gif);	/* general background image					*/
+	--background:			url(https://files.horizon.pics/aa5dacad-ba47-4ff6-abde-3652bdf87084?a=550&mime1=image&mime2=gif);	/* general background image					*/
 	--backgroundposition:		center;				/* default: center				(position of background - values: [center/top/right/bottom/left])			*/
 	--backgroundsize:		cover;				/* default: cover				(sizefit of background - values: [cover/contain/auto])					*/
 	--backgroundblur:		0;				/* default: 0					(blur in px, only works when --background is set to an image)				*/
